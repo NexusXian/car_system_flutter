@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'pages/personal_center_page.dart';
 import 'model/user.dart';
 import 'pages/real_time_detection_page.dart';
+import 'pages/driving_record_page.dart';
 
 void main() {
   runApp(const MyApp());
@@ -14,6 +15,8 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       title: '行车助手',
+      // 移除右上角的DEBUG标识
+      debugShowCheckedModeBanner: false,
       theme: ThemeData(
         primarySwatch: Colors.blue,
         visualDensity: VisualDensity.adaptivePlatformDensity,
@@ -36,11 +39,12 @@ class _MainPageState extends State<MainPage> {
   // 模拟用户数据
   late final User _currentUser = User.initial().copyWith(
     uid: "USER001",
-    realName: "NexusXian",
+    realName: "张三",
     weight: 70.5,
     height: 178,
     bloodType: "O型",
-    avatarUrl: "https://bkimg.cdn.bcebos.com/pic/a50f4bfbfbedab6434c0d6c8f836afc379311e03?x-bce-process=image/format,f_auto/quality,Q_70/resize,m_lfit,limit_1,w_536", cars: [],
+    avatarUrl: "https://bkimg.cdn.bcebos.com/pic/a50f4bfbfbedab6434c0d6c8f836afc379311e03?x-bce-process=image/format,f_auto/quality,Q_70/resize,m_lfit,limit_1,w_536",
+    cars: [],
   );
 
   late final List<Widget> _pages = [
@@ -79,32 +83,6 @@ class _MainPageState extends State<MainPage> {
         unselectedItemColor: Colors.grey,
         onTap: _onItemTapped,
         type: BottomNavigationBarType.fixed,
-      ),
-    );
-  }
-}
-
-
-
-// 行车记录页面
-class DrivingRecordPage extends StatelessWidget {
-  const DrivingRecordPage({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text('行车记录')),
-      body: const Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(Icons.history, size: 80, color: Colors.blue),
-            SizedBox(height: 20),
-            Text('行车记录页面', style: TextStyle(fontSize: 24)),
-            SizedBox(height: 10),
-            Text('查看历史行车数据和记录', style: TextStyle(color: Colors.grey)),
-          ],
-        ),
       ),
     );
   }
