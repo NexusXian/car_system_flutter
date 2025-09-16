@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import 'pages/personal_center_page.dart';
+import 'model/user.dart';
+import 'pages/real_time_detection_page.dart';
 
 void main() {
   runApp(const MyApp());
@@ -28,17 +31,24 @@ class MainPage extends StatefulWidget {
 }
 
 class _MainPageState extends State<MainPage> {
-  // 当前选中的页面索引
-  int _currentIndex = 0;
+  int _currentIndex = 1;
 
-  // 三个页面的列表
-  final List<Widget> _pages = [
+  // 模拟用户数据
+  late final User _currentUser = User.initial().copyWith(
+    uid: "USER001",
+    realName: "NexusXian",
+    weight: 70.5,
+    height: 178,
+    bloodType: "O型",
+    avatarUrl: "https://bkimg.cdn.bcebos.com/pic/a50f4bfbfbedab6434c0d6c8f836afc379311e03?x-bce-process=image/format,f_auto/quality,Q_70/resize,m_lfit,limit_1,w_536", cars: [],
+  );
+
+  late final List<Widget> _pages = [
     const RealTimeDetectionPage(),
     const DrivingRecordPage(),
-    const PersonalCenterPage(),
+    PersonalCenterPage(user: _currentUser),
   ];
 
-  // 导航项被点击时更新状态
   void _onItemTapped(int index) {
     setState(() {
       _currentIndex = index;
@@ -68,47 +78,13 @@ class _MainPageState extends State<MainPage> {
         selectedItemColor: Colors.blue,
         unselectedItemColor: Colors.grey,
         onTap: _onItemTapped,
-        type: BottomNavigationBarType.fixed, // 确保在有三个以上项目时标签都显示
+        type: BottomNavigationBarType.fixed,
       ),
     );
   }
 }
 
-// 实时检测页面
-class RealTimeDetectionPage extends StatelessWidget {
-  const RealTimeDetectionPage({super.key});
 
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('实时检测'),
-      ),
-      body: const Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              Icons.track_changes,
-              size: 80,
-              color: Colors.blue,
-            ),
-            SizedBox(height: 20),
-            Text(
-              '实时检测页面',
-              style: TextStyle(fontSize: 24),
-            ),
-            SizedBox(height: 10),
-            Text(
-              '显示车辆实时状态和检测信息',
-              style: TextStyle(color: Colors.grey),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
 
 // 行车记录页面
 class DrivingRecordPage extends StatelessWidget {
@@ -117,68 +93,19 @@ class DrivingRecordPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('行车记录'),
-      ),
+      appBar: AppBar(title: const Text('行车记录')),
       body: const Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(
-              Icons.history,
-              size: 80,
-              color: Colors.blue,
-            ),
+            Icon(Icons.history, size: 80, color: Colors.blue),
             SizedBox(height: 20),
-            Text(
-              '行车记录页面',
-              style: TextStyle(fontSize: 24),
-            ),
+            Text('行车记录页面', style: TextStyle(fontSize: 24)),
             SizedBox(height: 10),
-            Text(
-              '查看历史行车数据和记录',
-              style: TextStyle(color: Colors.grey),
-            ),
+            Text('查看历史行车数据和记录', style: TextStyle(color: Colors.grey)),
           ],
         ),
       ),
     );
   }
 }
-
-// 个人中心页面
-class PersonalCenterPage extends StatelessWidget {
-  const PersonalCenterPage({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('个人中心'),
-      ),
-      body: const Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              Icons.person,
-              size: 80,
-              color: Colors.blue,
-            ),
-            SizedBox(height: 20),
-            Text(
-              '个人中心页面',
-              style: TextStyle(fontSize: 24),
-            ),
-            SizedBox(height: 10),
-            Text(
-              '管理个人信息和设置',
-              style: TextStyle(color: Colors.grey),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-

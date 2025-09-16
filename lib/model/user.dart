@@ -1,4 +1,7 @@
-class Driver {
+// lib/model/user.dart
+import 'package:car_system_flutter/model/car.dart';
+
+class User {
   String uid;
   String realName;             // 真实姓名
   String hireDate;             // 入职时间
@@ -15,13 +18,17 @@ class Driver {
   String familyBrief;          // 家庭情况简要记录
   int subsidy;                 // 津贴 (默认 1000)
   int infractionCount;         // 违规次数
+  List<Car> cars;
+  double weight;               // 体重
   double oxygenSaturation;     // 血氧
   double heartRate;            // 心率
   double bodyTemperature;      // 体温
-  DateTime createAt;
-  DateTime updateAt;
+  double height;               // 身高
+  DateTime createdAt;          // 创建时间
+  DateTime updatedAt;          // 更新时间
+  String? avatarUrl;           // 头像链接（可空）
 
-  Driver({
+  User({
     required this.uid,
     required this.realName,
     required this.hireDate,
@@ -38,69 +45,81 @@ class Driver {
     required this.familyBrief,
     required this.subsidy,
     required this.infractionCount,
+    required this.weight,
+    required this.cars,
     required this.oxygenSaturation,
     required this.heartRate,
     required this.bodyTemperature,
-    required this.createAt,
-    required this.updateAt,
+    required this.height,
+    this.avatarUrl,
+    required this.createdAt,
+    required this.updatedAt,
   });
 
   /// 工厂构造函数：从 JSON 创建对象
-  factory Driver.fromJson(Map<String, dynamic> json) {
-    return Driver(
-      uid: json['UID'] ?? '',
+  factory User.fromJson(Map<String, dynamic> json) {
+    return User(
+      uid: json['uid'] ?? '',
       realName: json['realName'] ?? '',
       hireDate: json['hireDate'] ?? '',
-      drivingExperience: json['drivingExperience'] ?? 0,
-      idCardNumber: json['IDCardNumber'] ?? '',
+      drivingExperience: (json['drivingExperience'] ?? 0).toInt(),
+      idCardNumber: json['idCardNumber'] ?? '',
       licensePlate: json['licensePlate'] ?? '',
-      bloodType: json['BloodType'] ?? '',
-      residentialAddress: json['ResidentialAddress'] ?? '',
+      bloodType: json['bloodType'] ?? '',
+      residentialAddress: json['residentialAddress'] ?? '',
       emergencyContact: json['emergencyContact'] ?? '',
       allergies: json['allergies'] ?? '',
-      isOrganDonor: json['IsOrganDonor'] ?? false,
-      medicalNotes: json['MedicalNotes'] ?? '',
+      isOrganDonor: _parseBool(json['isOrganDonor']),
+      medicalNotes: json['medicalNotes'] ?? '',
+      cars: List<Car>.from(json['cars'] ?? []),
       certificates: List<String>.from(json['certificates'] ?? []),
       familyBrief: json['familyBrief'] ?? '',
-      subsidy: json['subsidy'] ?? 1000,
-      infractionCount: json['infractionCount'] ?? 0,
+      subsidy: (json['subsidy'] ?? 1000).toInt(),
+      infractionCount: (json['infractionCount'] ?? 0).toInt(),
+      weight: (json['weight'] ?? 0).toDouble(),
       oxygenSaturation: (json['oxygenSaturation'] ?? 0).toDouble(),
       heartRate: (json['heartRate'] ?? 0).toDouble(),
       bodyTemperature: (json['bodyTemperature'] ?? 0).toDouble(),
-      createAt: DateTime.tryParse(json['create_at'] ?? '') ?? DateTime.now(),
-      updateAt: DateTime.tryParse(json['update_at'] ?? '') ?? DateTime.now(),
+      height: (json['height'] ?? 0).toDouble(),
+      avatarUrl: json['avatarUrl'],
+      createdAt: DateTime.tryParse(json['createdAt'] ?? '') ?? DateTime.now(),
+      updatedAt: DateTime.tryParse(json['updatedAt'] ?? '') ?? DateTime.now(),
     );
   }
 
   /// 转 JSON
   Map<String, dynamic> toJson() {
     return {
-      'UID': uid,
+      'uid': uid,
       'realName': realName,
       'hireDate': hireDate,
       'drivingExperience': drivingExperience,
-      'IDCardNumber': idCardNumber,
+      'idCardNumber': idCardNumber,
       'licensePlate': licensePlate,
-      'BloodType': bloodType,
-      'ResidentialAddress': residentialAddress,
+      'bloodType': bloodType,
+      'residentialAddress': residentialAddress,
       'emergencyContact': emergencyContact,
       'allergies': allergies,
-      'IsOrganDonor': isOrganDonor,
-      'MedicalNotes': medicalNotes,
+      'isOrganDonor': isOrganDonor,
+      'medicalNotes': medicalNotes,
       'certificates': certificates,
       'familyBrief': familyBrief,
       'subsidy': subsidy,
       'infractionCount': infractionCount,
+      'weight': weight,
       'oxygenSaturation': oxygenSaturation,
       'heartRate': heartRate,
+      'cars': cars,
       'bodyTemperature': bodyTemperature,
-      'create_at': createAt.toIso8601String(),
-      'update_at': updateAt.toIso8601String(),
+      'height': height,
+      'avatarUrl': avatarUrl,
+      'createdAt': createdAt.toIso8601String(),
+      'updatedAt': updatedAt.toIso8601String(),
     };
   }
 
   /// 初始化构造函数：带默认值
-  Driver.initial()
+  User.initial()
       : uid = '',
         realName = '',
         hireDate = '',
@@ -109,6 +128,7 @@ class Driver {
         licensePlate = '',
         bloodType = '',
         residentialAddress = '',
+        cars= [],
         emergencyContact = '',
         allergies = '',
         isOrganDonor = false,
@@ -117,10 +137,61 @@ class Driver {
         familyBrief = '',
         subsidy = 1000,
         infractionCount = 0,
+        weight = 0.0,
         oxygenSaturation = 0.0,
         heartRate = 0.0,
         bodyTemperature = 0.0,
-        createAt = DateTime.now(),
-        updateAt = DateTime.now();
-}
+        height = 0.0,
+        avatarUrl = null,
+        createdAt = DateTime.now(),
+        updatedAt = DateTime.now();
 
+  // 复制对象并修改部分属性
+  User copyWith({
+    String? uid,
+    String? realName,
+    double? weight,
+    double? height,
+    String? bloodType,
+    String? avatarUrl, required List<Car> cars,
+  }) {
+    return User(
+      uid: uid ?? this.uid,
+      realName: realName ?? this.realName,
+      hireDate: hireDate,
+      drivingExperience: drivingExperience,
+      idCardNumber: idCardNumber,
+      licensePlate: licensePlate,
+      bloodType: bloodType ?? this.bloodType,
+      residentialAddress: residentialAddress,
+      emergencyContact: emergencyContact,
+      allergies: allergies,
+      isOrganDonor: isOrganDonor,
+      medicalNotes: medicalNotes,
+      certificates: certificates,
+      familyBrief: familyBrief,
+      subsidy: subsidy,
+      cars: cars,
+      infractionCount: infractionCount,
+      weight: weight ?? this.weight,
+      oxygenSaturation: oxygenSaturation,
+      heartRate: heartRate,
+      bodyTemperature: bodyTemperature,
+      height: height ?? this.height,
+      avatarUrl: avatarUrl ?? this.avatarUrl,
+      createdAt: createdAt,
+      updatedAt: updatedAt,
+    );
+  }
+
+  /// 布尔值解析辅助函数
+  static bool _parseBool(dynamic value) {
+    if (value is bool) return value;
+    if (value is int) return value == 1;
+    if (value is String) {
+      final lower = value.toLowerCase();
+      return lower == 'true' || lower == '1' || lower == 'yes';
+    }
+    return false;
+  }
+}
