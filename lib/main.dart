@@ -39,11 +39,11 @@ class _MainPageState extends State<MainPage> {
   // 模拟用户数据
   late final User _currentUser = User.initial().copyWith(
     uid: "USER001",
-    realName: "张三",
+    realName: "樊治余",
     weight: 70.5,
     height: 178,
     bloodType: "O型",
-    avatarUrl: "https://bkimg.cdn.bcebos.com/pic/a50f4bfbfbedab6434c0d6c8f836afc379311e03?x-bce-process=image/format,f_auto/quality,Q_70/resize,m_lfit,limit_1,w_536",
+    avatarUrl: "https://pic.616pic.com/ys_bnew_img/00/29/47/p9Ze3YDvWk.jpg",
     cars: [],
   );
 

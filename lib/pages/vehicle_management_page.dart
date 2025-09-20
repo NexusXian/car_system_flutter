@@ -1,8 +1,88 @@
-// pages/vehicle_management_page.dart
 import 'package:flutter/material.dart';
 import 'package:uuid/uuid.dart';
+import 'package:sqflite/sqflite.dart';
+import 'package:path/path.dart' as path;
 import '../model/car.dart';
 import '../model/user.dart';
+
+// 数据库帮助类
+class DatabaseHelper {
+  static final DatabaseHelper instance = DatabaseHelper._init();
+  static Database? _database;
+
+  DatabaseHelper._init();
+
+  Future<Database> get database async {
+    if (_database != null) return _database!;
+    _database = await _initDB('cars.db');
+    return _database!;
+  }
+
+  Future<Database> _initDB(String filePath) async {
+    final dbPath = await getDatabasesPath();
+    final pathStr = path.join(dbPath, filePath);
+
+    return await openDatabase(pathStr, version: 1, onCreate: _createDB);
+  }
+
+  Future _createDB(Database db, int version) async {
+    await db.execute('''
+      CREATE TABLE cars (
+        id TEXT PRIMARY KEY,
+        userId TEXT NOT NULL,
+        brand TEXT NOT NULL,
+        model TEXT NOT NULL,
+        licensePlate TEXT NOT NULL,
+        color TEXT NOT NULL,
+        purchaseDate TEXT NOT NULL
+      )
+    ''');
+  }
+
+  // 为用户添加车辆
+  Future<void> insertCar(Car car, String userId) async {
+    final db = await instance.database;
+    await db.insert(
+      'cars',
+      {
+        ...car.toMap(),
+        'userId': userId,
+      },
+      conflictAlgorithm: ConflictAlgorithm.replace,
+    );
+  }
+
+  // 获取用户的所有车辆
+  Future<List<Car>> getCarsForUser(String userId) async {
+    final db = await instance.database;
+    final maps = await db.query(
+      'cars',
+      where: 'userId = ?',
+      whereArgs: [userId],
+    );
+
+    if (maps.isEmpty) {
+      return [];
+    } else {
+      return maps.map((map) => Car.fromMap(map)).toList();
+    }
+  }
+
+  // 删除车辆
+  Future<void> deleteCar(String carId) async {
+    final db = await instance.database;
+    await db.delete(
+      'cars',
+      where: 'id = ?',
+      whereArgs: [carId],
+    );
+  }
+
+  Future close() async {
+    final db = await instance.database;
+    db.close();
+  }
+}
 
 class VehicleManagementPage extends StatefulWidget {
   final User user;
@@ -20,31 +100,86 @@ class VehicleManagementPage extends StatefulWidget {
 
 class _VehicleManagementPageState extends State<VehicleManagementPage> {
   late User _currentUser;
+  late List<Car> _userCars;
+  bool _isLoading = true;
 
   @override
   void initState() {
     super.initState();
     _currentUser = widget.user;
+    _loadUserCars();
+  }
+
+  // 从数据库加载用户车辆
+  Future<void> _loadUserCars() async {
+    try {
+      final cars = await DatabaseHelper.instance.getCarsForUser(_currentUser.uid);
+      setState(() {
+        _userCars = cars;
+        _isLoading = false;
+        // 更新用户对象中的车辆列表
+        _currentUser = _currentUser.copyWith(cars: cars);
+        widget.onUserUpdated(_currentUser);
+      });
+    } catch (e) {
+      debugPrint('加载车辆失败: $e');
+      setState(() {
+        _userCars = [];
+        _isLoading = false;
+      });
+    }
   }
 
   // 添加新车辆
-  void _addNewCar(Car newCar) {
-    setState(() {
-      final updatedCars = List<Car>.from(_currentUser.cars);
-      updatedCars.add(newCar);
-      _currentUser = _currentUser.copyWith(cars: updatedCars);
-      widget.onUserUpdated(_currentUser);
-    });
-    Navigator.pop(context);
+  void _addNewCar(Car newCar) async {
+    try {
+      // 保存到数据库
+      await DatabaseHelper.instance.insertCar(newCar, _currentUser.uid);
+
+      // 更新UI
+      setState(() {
+        final updatedCars = List<Car>.from(_userCars);
+        updatedCars.add(newCar);
+        _userCars = updatedCars;
+        _currentUser = _currentUser.copyWith(cars: updatedCars);
+        widget.onUserUpdated(_currentUser);
+      });
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('车辆添加成功')),
+        );
+        Navigator.pop(context);
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('添加失败: ${e.toString()}')),
+        );
+      }
+    }
   }
 
   // 删除车辆
-  void _deleteCar(String carId) {
-    setState(() {
-      final updatedCars = _currentUser.cars.where((car) => car.id != carId).toList();
-      _currentUser = _currentUser.copyWith(cars: updatedCars);
-      widget.onUserUpdated(_currentUser);
-    });
+  void _deleteCar(String carId) async {
+    try {
+      // 从数据库删除
+      await DatabaseHelper.instance.deleteCar(carId);
+
+      // 更新UI
+      setState(() {
+        final updatedCars = _userCars.where((car) => car.id != carId).toList();
+        _userCars = updatedCars;
+        _currentUser = _currentUser.copyWith(cars: updatedCars);
+        widget.onUserUpdated(_currentUser);
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('车辆已删除')),
+      );
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('删除失败: ${e.toString()}')),
+      );
+    }
   }
 
   // 导航到添加车辆页面
@@ -65,7 +200,9 @@ class _VehicleManagementPageState extends State<VehicleManagementPage> {
       appBar: AppBar(
         title: const Text('车辆管理'),
       ),
-      body: _currentUser.cars.isEmpty
+      body: _isLoading
+          ? const Center(child: CircularProgressIndicator())
+          : _userCars.isEmpty
           ? const Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -86,9 +223,9 @@ class _VehicleManagementPageState extends State<VehicleManagementPage> {
       )
           : ListView.builder(
         padding: const EdgeInsets.all(16),
-        itemCount: _currentUser.cars.length,
+        itemCount: _userCars.length,
         itemBuilder: (context, index) {
-          final car = _currentUser.cars[index];
+          final car = _userCars[index];
           return Card(
             elevation: 3,
             margin: const EdgeInsets.only(bottom: 12),
@@ -148,7 +285,7 @@ class _AddVehiclePageState extends State<AddVehiclePage> {
     );
     if (picked != null) {
       setState(() {
-        _purchaseDateController.text = "${picked.year}-${picked.month}-${picked.day}";
+        _purchaseDateController.text = "${picked.year}-${picked.month.toString().padLeft(2, '0')}-${picked.day.toString().padLeft(2, '0')}";
       });
     }
   }
@@ -173,6 +310,10 @@ class _AddVehiclePageState extends State<AddVehiclePage> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('添加车辆'),
+        leading: IconButton(
+          icon: const Icon(Icons.close),
+          onPressed: () => Navigator.pop(context),
+        ),
       ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),

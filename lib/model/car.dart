@@ -1,4 +1,3 @@
-// model/car.dart
 class Car {
   final String id;
   final String brand;
@@ -32,6 +31,30 @@ class Car {
       licensePlate: licensePlate ?? this.licensePlate,
       color: color ?? this.color,
       purchaseDate: purchaseDate ?? this.purchaseDate,
+    );
+  }
+
+  // 转换为Map，用于数据库存储
+  Map<String, dynamic> toMap() {
+    return {
+      'id': id,
+      'brand': brand,
+      'model': model,
+      'licensePlate': licensePlate,
+      'color': color,
+      'purchaseDate': purchaseDate,
+    };
+  }
+
+  // 从Map创建Car对象，用于从数据库读取
+  static Car fromMap(Map<String, dynamic> map) {
+    return Car(
+      id: map['id'],
+      brand: map['brand'],
+      model: map['model'],
+      licensePlate: map['licensePlate'],
+      color: map['color'],
+      purchaseDate: map['purchaseDate'],
     );
   }
 }
