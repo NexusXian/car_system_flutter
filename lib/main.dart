@@ -3,6 +3,7 @@ import 'pages/personal_center_page.dart';
 import 'model/user.dart';
 import 'pages/real_time_detection_page.dart';
 import 'pages/driving_record_page.dart';
+import 'services/shake_alarm_service.dart';
 
 void main() {
   runApp(const MyApp());
@@ -35,6 +36,20 @@ class MainPage extends StatefulWidget {
 
 class _MainPageState extends State<MainPage> {
   int _currentIndex = 1;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      ShakeAlarmService().start(context);
+    });
+  }
+
+  @override
+  void dispose() {
+    ShakeAlarmService().stop();
+    super.dispose();
+  }
 
   // 模拟用户数据
   late final User _currentUser = User.initial().copyWith(
@@ -69,14 +84,8 @@ class _MainPageState extends State<MainPage> {
             icon: Icon(Icons.track_changes),
             label: '实时检测',
           ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.history),
-            label: '行车记录',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.person),
-            label: '个人中心',
-          ),
+          BottomNavigationBarItem(icon: Icon(Icons.history), label: '行车记录'),
+          BottomNavigationBarItem(icon: Icon(Icons.person), label: '个人中心'),
         ],
         currentIndex: _currentIndex,
         selectedItemColor: Colors.blue,
