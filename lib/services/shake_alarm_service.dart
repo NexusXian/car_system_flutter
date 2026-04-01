@@ -18,6 +18,7 @@ class ShakeAlarmService {
   static const Duration _cooldown = Duration(seconds: 10);
 
   StreamSubscription<AccelerometerEvent>? _accelSubscription;
+  Timer? _autoCallTimer;
   final List<DateTime> _recentShakes = [];
   DateTime? _lastTriggered;
   bool _isAlarmActive = false;
@@ -26,7 +27,7 @@ class ShakeAlarmService {
   Function? onAlarmTriggered;
 
   void start(BuildContext context) {
-    onAlarmTriggered = () => _showAlarmDialog(context);
+    onAlarmTriggered = () => _showAlarmScreen(context);
 
     _accelSubscription = accelerometerEventStream(
       samplingPeriod: SensorInterval.uiInterval,
@@ -36,6 +37,8 @@ class ShakeAlarmService {
   void stop() {
     _accelSubscription?.cancel();
     _accelSubscription = null;
+    _isAlarmActive = false;
+    _autoCallTimer?.cancel();
     _audioPlayer.stop();
   }
 
@@ -67,11 +70,23 @@ class ShakeAlarmService {
     }
   }
 
+  void triggerManualEmergency(BuildContext context) {
+    if (_isAlarmActive) return;
+    onAlarmTriggered = () => _showAlarmScreen(context);
+    _lastTriggered = DateTime.now();
+    _triggerAlarm();
+  }
+
   void _triggerAlarm() {
     _isAlarmActive = true;
     onAlarmTriggered?.call();
     _playAlarmSound();
-    Future.delayed(const Duration(seconds: 3), () => _callEmergency());
+    _autoCallTimer?.cancel();
+    _autoCallTimer = Timer(const Duration(seconds: 3), () {
+      if (_isAlarmActive) {
+        _callEmergency();
+      }
+    });
   }
 
   void _playAlarmSound() {
@@ -82,10 +97,12 @@ class ShakeAlarmService {
 
   void stopAlarm() {
     _isAlarmActive = false;
+    _autoCallTimer?.cancel();
     _audioPlayer.stop();
   }
 
   void _callEmergency() async {
+    _autoCallTimer?.cancel();
     final uri = Uri.parse('tel:120');
     if (await canLaunchUrl(uri)) {
       await launchUrl(uri);
@@ -149,88 +166,103 @@ class ShakeAlarmService {
     return wavBytes;
   }
 
-  void _showAlarmDialog(BuildContext context) {
-    showDialog(
+  void _showAlarmScreen(BuildContext context) {
+    if (!context.mounted) return;
+
+    showGeneralDialog(
       context: context,
       barrierDismissible: false,
-      builder: (dialogContext) {
+      barrierLabel: '紧急报警',
+      pageBuilder: (dialogContext, _, __) {
         return PopScope(
           canPop: false,
-          child: AlertDialog(
-            backgroundColor: Colors.red,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(16),
-            ),
-            title: const Text(
-              '紧急报警',
-              style: TextStyle(
-                color: Colors.white,
-                fontSize: 28,
-                fontWeight: FontWeight.bold,
+          child: Material(
+            color: Colors.red.shade700,
+            child: SafeArea(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 24,
+                  vertical: 32,
+                ),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const Icon(
+                      Icons.warning_amber_rounded,
+                      color: Colors.yellow,
+                      size: 96,
+                    ),
+                    const SizedBox(height: 24),
+                    const Text(
+                      '紧急报警',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 32,
+                        fontWeight: FontWeight.bold,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: 16),
+                    const Text(
+                      '疑似发生车祸\n正在发出报警并自动拨打120...',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 22,
+                        height: 1.5,
+                        fontWeight: FontWeight.w500,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: 40),
+                    SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton.icon(
+                        onPressed: () {
+                          stopAlarm();
+                          Navigator.of(
+                            dialogContext,
+                            rootNavigator: true,
+                          ).pop();
+                        },
+                        icon: const Icon(Icons.cancel, color: Colors.red),
+                        label: const Text(
+                          '取消报警（误触）',
+                          style: TextStyle(color: Colors.red, fontSize: 16),
+                        ),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(vertical: 16),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(14),
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton.icon(
+                        onPressed: _callEmergency,
+                        icon: const Icon(
+                          Icons.phone_in_talk,
+                          color: Colors.white,
+                        ),
+                        label: const Text(
+                          '立即拨打120',
+                          style: TextStyle(color: Colors.white, fontSize: 16),
+                        ),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.red.shade900,
+                          padding: const EdgeInsets.symmetric(vertical: 16),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(14),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
               ),
-              textAlign: TextAlign.center,
-            ),
-            content: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const Icon(
-                  Icons.warning_amber_rounded,
-                  color: Colors.yellow,
-                  size: 80,
-                ),
-                const SizedBox(height: 16),
-                const Text(
-                  '检测到剧烈晃动！\n疑似发生交通事故！\n正在拨打120急救电话...',
-                  style: TextStyle(color: Colors.white, fontSize: 18),
-                  textAlign: TextAlign.center,
-                ),
-                const SizedBox(height: 24),
-                SizedBox(
-                  width: double.infinity,
-                  child: ElevatedButton.icon(
-                    onPressed: () {
-                      ShakeAlarmService().stopAlarm();
-                      Navigator.of(dialogContext).pop();
-                    },
-                    icon: const Icon(Icons.cancel, color: Colors.red),
-                    label: const Text(
-                      '取消报警（误触）',
-                      style: TextStyle(color: Colors.red, fontSize: 16),
-                    ),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(vertical: 14),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 12),
-                SizedBox(
-                  width: double.infinity,
-                  child: ElevatedButton.icon(
-                    onPressed: () async {
-                      final uri = Uri.parse('tel:120');
-                      if (await canLaunchUrl(uri)) {
-                        await launchUrl(uri);
-                      }
-                    },
-                    icon: const Icon(Icons.phone_in_talk, color: Colors.white),
-                    label: const Text(
-                      '立即拨打120',
-                      style: TextStyle(color: Colors.white, fontSize: 16),
-                    ),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.red.shade700,
-                      padding: const EdgeInsets.symmetric(vertical: 14),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                    ),
-                  ),
-                ),
-              ],
             ),
           ),
         );

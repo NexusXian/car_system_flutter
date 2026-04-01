@@ -154,7 +154,7 @@ class SuggestionsApiResponse {
 // --- 6. API 服务 ---
 class ApiService {
   // 基础API地址
-  static const String _baseUrl = 'http://10.29.177.115:8200';
+  static const String _baseUrl = 'http://192.168.1.20:8200';
   static const String _recordApiUrl = '$_baseUrl/api/record/findByIDCard';
   static const String _suggestionsApiUrl = '$_baseUrl/api/user/report'; // 建议API地址
 

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
+import 'package:car_system_flutter/services/shake_alarm_service.dart';
 import 'dart:async';
 import 'dart:math';
 
@@ -111,7 +112,7 @@ class _RealTimeDetectionPageState extends State<RealTimeDetectionPage> {
       case 0:
         return _heartRateData;
       case 1:
-      // **修改点4：为体重图表提供月度数据**
+        // **修改点4：为体重图表提供月度数据**
         return _monthlyWeightData;
       case 2:
         return _bloodPressureData;
@@ -151,6 +152,18 @@ class _RealTimeDetectionPageState extends State<RealTimeDetectionPage> {
         title: const Text('用户实时状态'),
         backgroundColor: Colors.white,
         elevation: 1,
+        actions: [
+          IconButton(
+            onPressed: () {
+              ShakeAlarmService().triggerManualEmergency(context);
+            },
+            icon: const Icon(Icons.sos_rounded, color: Colors.red, size: 20),
+            tooltip: '紧急报警',
+            constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
+            padding: const EdgeInsets.all(8),
+          ),
+          const SizedBox(width: 8),
+        ],
       ),
       backgroundColor: Colors.grey[100],
       body: SingleChildScrollView(
@@ -203,15 +216,22 @@ class _RealTimeDetectionPageState extends State<RealTimeDetectionPage> {
                         ),
                         titlesData: FlTitlesData(
                           show: true,
-                          rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-                          topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                          rightTitles: const AxisTitles(
+                            sideTitles: SideTitles(showTitles: false),
+                          ),
+                          topTitles: const AxisTitles(
+                            sideTitles: SideTitles(showTitles: false),
+                          ),
                           // **修改点5：根据图表类型动态切换X轴标签**
                           bottomTitles: AxisTitles(
                             sideTitles: SideTitles(
                               showTitles: true,
                               reservedSize: 30,
                               interval: _chartType == 1 ? 1 : 2,
-                              getTitlesWidget: _chartType == 1 ? monthBottomTitleWidgets : timeBottomTitleWidgets,
+                              getTitlesWidget:
+                                  _chartType == 1
+                                      ? monthBottomTitleWidgets
+                                      : timeBottomTitleWidgets,
                             ),
                           ),
                           leftTitles: AxisTitles(
@@ -224,7 +244,10 @@ class _RealTimeDetectionPageState extends State<RealTimeDetectionPage> {
                         ),
                         borderData: FlBorderData(
                           show: true,
-                          border: Border.all(color: const Color(0xffe7e8ec), width: 1),
+                          border: Border.all(
+                            color: const Color(0xffe7e8ec),
+                            width: 1,
+                          ),
                         ),
                         minX: minX,
                         maxX: maxX,
@@ -318,7 +341,9 @@ class _RealTimeDetectionPageState extends State<RealTimeDetectionPage> {
       style: ElevatedButton.styleFrom(
         foregroundColor: isSelected ? Colors.white : Colors.black87,
         backgroundColor: isSelected ? Colors.blue : Colors.white,
-        side: BorderSide(color: isSelected ? Colors.blue : Colors.grey.shade300),
+        side: BorderSide(
+          color: isSelected ? Colors.blue : Colors.grey.shade300,
+        ),
         elevation: isSelected ? 2 : 0,
       ),
       child: Text(title),
@@ -388,7 +413,11 @@ class _RealTimeDetectionPageState extends State<RealTimeDetectionPage> {
     return SideTitleWidget(
       axisSide: meta.axisSide,
       space: 8.0,
-      child: Text(value.toInt().toString(), style: style, textAlign: TextAlign.left),
+      child: Text(
+        value.toInt().toString(),
+        style: style,
+        textAlign: TextAlign.left,
+      ),
     );
   }
 
@@ -397,7 +426,7 @@ class _RealTimeDetectionPageState extends State<RealTimeDetectionPage> {
       case 0:
         return 50;
       case 1:
-      // **修改点6：调整体重图表的Y轴范围**
+        // **修改点6：调整体重图表的Y轴范围**
         return 68;
       case 2:
         return 110;
@@ -411,7 +440,7 @@ class _RealTimeDetectionPageState extends State<RealTimeDetectionPage> {
       case 0:
         return 110;
       case 1:
-      // **修改点7：调整体重图表的Y轴范围**
+        // **修改点7：调整体重图表的Y轴范围**
         return 74;
       case 2:
         return 140;
@@ -429,9 +458,7 @@ class _RealTimeDetectionPageState extends State<RealTimeDetectionPage> {
     return Card(
       elevation: 2,
       shadowColor: Colors.black.withOpacity(0.05),
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-      ),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       child: Padding(
         padding: const EdgeInsets.all(16.0),
         child: Column(
@@ -444,10 +471,7 @@ class _RealTimeDetectionPageState extends State<RealTimeDetectionPage> {
               children: [
                 Text(
                   title,
-                  style: const TextStyle(
-                    fontSize: 14,
-                    color: Colors.grey,
-                  ),
+                  style: const TextStyle(fontSize: 14, color: Colors.grey),
                 ),
                 const SizedBox(height: 4),
                 Text(
